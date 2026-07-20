@@ -195,13 +195,25 @@ class Downloader(
             val activeDownloadsFlow = combine(
                 queueState,
                 downloadPreferences.parallelSourceLimit.changes(),
-            ) { a, b -> a to b }.transformLatest { (queue, parallelCount) ->
+                downloadPreferences.sourceConcurrencyOverrides.changes(),
+            ) { a, b, c -> Triple(a, b, c) }.transformLatest { (queue, parallelCount, _) ->
                 while (true) {
-                    val activeDownloads = queue.asSequence()
+                    val bySource = queue.asSequence()
                         // Ignore completed downloads, leave them in the queue
                         .filter { it.status.value <= Download.State.DOWNLOADING.value }
                         .groupBy { it.source }
                         .toList()
+
+                    val (overridden, normal) = bySource.partition {
+                        downloadPreferences.concurrencyOverrideFor(it.first.id) != null
+                    }
+
+                    // Overridden sources bypass parallelSourceLimit and may run multiple
+                    // chapters at once; everything else keeps the default 1-per-source behavior.
+                    val activeDownloads = overridden.flatMap { (source, downloads) ->
+                        val chapterConcurrency = downloadPreferences.concurrencyOverrideFor(source.id)!!.chapterConcurrency
+                        downloads.take(chapterConcurrency)
+                    } + normal
                         .take(parallelCount)
                         .map { (_, downloads) -> downloads.first() }
                     emit(activeDownloads)
@@ -365,7 +377,14 @@ class Downloader(
             download.status = Download.State.DOWNLOADING
 
             // Start downloading images, consider we can have downloaded images already
-            pageList.asFlow().flatMapMerge(concurrency = downloadPreferences.parallelPageLimit.get()) { page ->
+            // A page concurrency override of 0 means unlimited (all pages start at once).
+            val overridePageConcurrency = downloadPreferences.concurrencyOverrideFor(download.source.id)?.pageConcurrency
+            val pageConcurrency = when (overridePageConcurrency) {
+                null -> downloadPreferences.parallelPageLimit.get()
+                0 -> Int.MAX_VALUE
+                else -> overridePageConcurrency
+            }
+            pageList.asFlow().flatMapMerge(concurrency = pageConcurrency) { page ->
                 flow {
                     // Fetch image URL if necessary
                     if (page.imageUrl.isNullOrEmpty()) {
