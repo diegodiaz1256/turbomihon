@@ -11,10 +11,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.util.fastMap
 import eu.kanade.presentation.category.visualName
 import eu.kanade.presentation.more.settings.Preference
+import eu.kanade.presentation.more.settings.widget.SourceConcurrencyOverrideDialog
 import eu.kanade.presentation.more.settings.widget.TriStateListDialog
+import eu.kanade.tachiyomi.source.online.HttpSource
 import tachiyomi.domain.category.interactor.GetCategories
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.download.service.DownloadPreferences
+import tachiyomi.domain.source.service.SourceManager
 import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
@@ -34,6 +37,7 @@ object SettingsDownloadScreen : SearchableSettings {
         val allCategories by getCategories.subscribe().collectAsState(initial = emptyList())
 
         val downloadPreferences = remember { Injekt.get<DownloadPreferences>() }
+        val sourceManager = remember { Injekt.get<SourceManager>() }
         val parallelSourceLimit by downloadPreferences.parallelSourceLimit.collectAsState()
         val parallelPageLimit by downloadPreferences.parallelPageLimit.collectAsState()
         return listOf(
@@ -63,6 +67,10 @@ object SettingsDownloadScreen : SearchableSettings {
                 subtitle = stringResource(MR.strings.pref_download_concurrent_pages_summary),
                 onValueChanged = { downloadPreferences.parallelPageLimit.set(it) },
             ),
+            getSourceConcurrencyOverridePreference(
+                downloadPreferences = downloadPreferences,
+                sourceManager = sourceManager,
+            ),
             getDeleteChaptersGroup(
                 downloadPreferences = downloadPreferences,
                 categories = allCategories,
@@ -72,6 +80,44 @@ object SettingsDownloadScreen : SearchableSettings {
                 allCategories = allCategories,
             ),
             getDownloadAheadGroup(downloadPreferences = downloadPreferences),
+        )
+    }
+
+    @Composable
+    private fun getSourceConcurrencyOverridePreference(
+        downloadPreferences: DownloadPreferences,
+        sourceManager: SourceManager,
+    ): Preference.PreferenceItem.TextPreference {
+        var showDialog by rememberSaveable { mutableStateOf(false) }
+        val overrides by downloadPreferences.sourceConcurrencyOverrides.collectAsState()
+        val overridesById = remember(overrides) { downloadPreferences.concurrencyOverridesById() }
+
+        if (showDialog) {
+            val onlineSources = remember { sourceManager.getOnlineSources().sortedBy { it.name } }
+            SourceConcurrencyOverrideDialog(
+                sources = onlineSources,
+                overridesById = overridesById,
+                onDismissRequest = { showDialog = false },
+                onSetOverride = { source: HttpSource, chapters: Int, pages: Int ->
+                    downloadPreferences.setConcurrencyOverride(source.id, chapters, pages)
+                },
+                onRemoveOverride = { source: HttpSource ->
+                    downloadPreferences.removeConcurrencyOverride(source.id)
+                },
+            )
+        }
+
+        val subtitle = if (overridesById.isEmpty()) {
+            stringResource(MR.strings.pref_download_source_concurrency_overrides_summary)
+        } else {
+            val names = overridesById.keys.mapNotNull { sourceManager.get(it)?.name }
+            names.joinToString()
+        }
+
+        return Preference.PreferenceItem.TextPreference(
+            title = stringResource(MR.strings.pref_download_source_concurrency_overrides),
+            subtitle = subtitle,
+            onClick = { showDialog = true },
         )
     }
 

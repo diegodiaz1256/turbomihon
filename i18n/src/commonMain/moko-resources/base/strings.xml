@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">Mihon</string>
+    <string name="app_name" translatable="false">TurboMihon</string>
 
     <!-- Generic strings -->
     <string name="on">On</string>
@@ -529,6 +529,11 @@
     <string name="pref_download_concurrent_sources">Concurrent source downloads</string>
     <string name="pref_download_concurrent_pages">Concurrent page downloads</string>
     <string name="pref_download_concurrent_pages_summary">Pages downloaded simultaneously per source</string>
+    <string name="pref_download_source_concurrency_overrides">Per-source concurrency overrides</string>
+    <string name="pref_download_source_concurrency_overrides_summary">Set a higher concurrent download limit for specific sources, bypassing the limit above</string>
+    <string name="pref_download_source_concurrency_overrides_value">%1$d chapters, %2$s pages</string>
+    <string name="pref_download_source_concurrency_pages_unlimited">Unlimited</string>
+    <string name="pref_download_source_concurrency_pages_zero_hint">Set to 0 for unlimited: all pages of a chapter start downloading at once</string>
 
     <!-- Tracking section -->
     <string name="tracking_guide">Tracking guide</string>
