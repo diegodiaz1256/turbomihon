@@ -71,17 +71,17 @@ jobs:
         run: |
           set -e
           TAG="v${{ needs.check_version_bump.outputs.version }}"
-          mv app/build/outputs/apk/release/app-universal-release.apk mihon-$TAG.apk
-          mv app/build/outputs/apk/release/app-arm64-v8a-release.apk mihon-arm64-v8a-$TAG.apk
-          mv app/build/outputs/apk/release/app-armeabi-v7a-release.apk mihon-armeabi-v7a-$TAG.apk
-          mv app/build/outputs/apk/release/app-x86-release.apk mihon-x86-$TAG.apk
-          mv app/build/outputs/apk/release/app-x86_64-release.apk mihon-x86_64-$TAG.apk
+          mv app/build/outputs/apk/release/app-universal-release.apk TurboMihon-$TAG.apk
+          mv app/build/outputs/apk/release/app-arm64-v8a-release.apk TurboMihon-arm64-v8a-$TAG.apk
+          mv app/build/outputs/apk/release/app-armeabi-v7a-release.apk TurboMihon-armeabi-v7a-$TAG.apk
+          mv app/build/outputs/apk/release/app-x86-release.apk TurboMihon-x86-$TAG.apk
+          mv app/build/outputs/apk/release/app-x86_64-release.apk TurboMihon-x86_64-$TAG.apk
 
       - name: Upload APKs
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: mihon-apks
-          path: mihon-*.apk
+          name: turbomihon-apks
+          path: TurboMihon-*.apk
 
   release:
     if: github.repository != 'mihonapp/mihon'
@@ -95,14 +95,14 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: mihon-apks
+          name: turbomihon-apks
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         with:
           tag_name: v${{ needs.check_version_bump.outputs.version }}
-          name: v${{ needs.check_version_bump.outputs.version }}
-          body: Automated build for personal fork, synced from upstream mihonapp/mihon.
-          files: mihon-*.apk
+          name: TurboMihon v${{ needs.check_version_bump.outputs.version }}
+          body: Automated build for TurboMihon (personal fork), synced from upstream mihonapp/mihon.
+          files: TurboMihon-*.apk
           draft: false
           prerelease: false
