@@ -211,7 +211,9 @@ class Downloader(
                     // Overridden sources bypass parallelSourceLimit and may run multiple
                     // chapters at once; everything else keeps the default 1-per-source behavior.
                     val activeDownloads = overridden.flatMap { (source, downloads) ->
-                        val chapterConcurrency = downloadPreferences.concurrencyOverrideFor(source.id)!!.chapterConcurrency
+                        val chapterConcurrency = downloadPreferences.concurrencyOverrideFor(
+                            source.id,
+                        )!!.chapterConcurrency
                         downloads.take(chapterConcurrency)
                     } + normal
                         .take(parallelCount)
@@ -378,7 +380,9 @@ class Downloader(
 
             // Start downloading images, consider we can have downloaded images already
             // A page concurrency override of 0 means unlimited (all pages start at once).
-            val overridePageConcurrency = downloadPreferences.concurrencyOverrideFor(download.source.id)?.pageConcurrency
+            val overridePageConcurrency = downloadPreferences.concurrencyOverrideFor(
+                download.source.id,
+            )?.pageConcurrency
             val pageConcurrency = when (overridePageConcurrency) {
                 null -> downloadPreferences.parallelPageLimit.get()
                 0 -> Int.MAX_VALUE
