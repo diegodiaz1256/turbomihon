@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch: {}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -30,12 +31,19 @@ jobs:
         id: check
         run: |
           CURRENT="$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts)"
-          PREVIOUS="$(git show HEAD~1:app/build.gradle.kts | grep -oP 'versionName\s*=\s*"\K[^"]+' || echo "")"
-          echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
-          if [ "$CURRENT" != "$PREVIOUS" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            # Manual run: build regardless of version bump, tag with run number
+            # so it can't collide with a real vX.Y.Z release tag later.
+            echo "version=$CURRENT-manual.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
             echo "bumped=true" >> "$GITHUB_OUTPUT"
           else
-            echo "bumped=false" >> "$GITHUB_OUTPUT"
+            PREVIOUS="$(git show HEAD~1:app/build.gradle.kts | grep -oP 'versionName\s*=\s*"\K[^"]+' || echo "")"
+            echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
+            if [ "$CURRENT" != "$PREVIOUS" ]; then
+              echo "bumped=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "bumped=false" >> "$GITHUB_OUTPUT"
+            fi
           fi
 
   build:
