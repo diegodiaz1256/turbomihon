@@ -102,6 +102,31 @@ class DownloadPreferences(
 
     data class SourceConcurrencyOverride(val chapterConcurrency: Int, val pageConcurrency: Int)
 
+    /**
+     * Picks which downloads should be actively running from [bySourceId] (downloads grouped and
+     * listed by their source id, completed ones already filtered out). Overridden sources bypass
+     * [parallelSourceLimit] and may run [SourceConcurrencyOverride.chapterConcurrency] chapters
+     * at once; every other source keeps the default one-chapter-at-a-time behavior, up to
+     * [parallelSourceLimit] concurrent sources.
+     */
+    fun <T> selectActiveDownloads(bySourceId: List<Pair<Long, List<T>>>): List<T> {
+        val parallelCount = parallelSourceLimit.get()
+        val (overridden, normal) = bySourceId.partition { concurrencyOverrideFor(it.first) != null }
+
+        return overridden.flatMap { (sourceId, downloads) ->
+            downloads.take(concurrencyOverrideFor(sourceId)!!.chapterConcurrency)
+        } + normal.take(parallelCount).map { (_, downloads) -> downloads.first() }
+    }
+
+    /** Page-download concurrency to use for [sourceId]; 0 from an override means unlimited. */
+    fun pageConcurrencyFor(sourceId: Long): Int {
+        return when (val override = concurrencyOverrideFor(sourceId)?.pageConcurrency) {
+            null -> parallelPageLimit.get()
+            0 -> Int.MAX_VALUE
+            else -> override
+        }
+    }
+
     companion object {
         private const val REMOVE_EXCLUDE_CATEGORIES_PREF_KEY = "remove_exclude_categories"
         private const val DOWNLOAD_NEW_CATEGORIES_PREF_KEY = "download_new_categories"
