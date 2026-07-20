@@ -1,0 +1,63 @@
+name: Upstream Sync
+on:
+  schedule:
+    - cron: '0 6 * * *' # daily 06:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    if: github.repository != 'mihonapp/mihon'
+    name: Sync with upstream
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch upstream
+        run: git remote add upstream https://github.com/mihonapp/mihon.git && git fetch upstream
+
+      - name: Check for new upstream commits
+        id: check
+        run: |
+          if git merge-base --is-ancestor upstream/main origin/main; then
+            echo "new=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Merge upstream into sync branch
+        if: steps.check.outputs.new == 'true'
+        id: merge
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -B upstream-sync origin/main
+          if git merge --no-edit upstream/main; then
+            echo "conflict=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "conflict=true" >> "$GITHUB_OUTPUT"
+          fi
+          git push --force-with-lease origin upstream-sync
+
+      - name: Open or update PR
+        if: steps.check.outputs.new == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CONFLICT: ${{ steps.merge.outputs.conflict }}
+        run: |
+          UPSTREAM_SHA="$(git rev-parse --short upstream/main)"
+          if [ "$CONFLICT" = "true" ]; then
+            BODY="Automated sync from upstream mihonapp/mihon @ $UPSTREAM_SHA. **Merge conflicts present** - resolve them in this PR before merging."
+          else
+            BODY="Automated sync from upstream mihonapp/mihon @ $UPSTREAM_SHA. Merged cleanly, no conflicts."
+          fi
+          EXISTING_PR="$(gh pr list --head upstream-sync --state open --json number -q '.[0].number' || true)"
+          if [ -n "$EXISTING_PR" ]; then
+            gh pr comment "$EXISTING_PR" --body "$BODY"
+          else
+            gh pr create --base main --head upstream-sync --title "Sync with upstream mihonapp/mihon" --body "$BODY"
+          fi
