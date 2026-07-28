@@ -166,6 +166,14 @@ object AboutScreen : Screen() {
                 }
 
                 item {
+                    TextPreferenceWidget(
+                        title = "TurboMihon",
+                        subtitle = "A personal fork of Mihon",
+                        onPreferenceClick = { uriHandler.openUri("https://github.com/diegodiaz1256/turbomihon") },
+                    )
+                }
+
+                item {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
