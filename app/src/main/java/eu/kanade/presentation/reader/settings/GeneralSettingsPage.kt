@@ -133,6 +133,11 @@ internal fun ColumnScope.GeneralPage(viewModel: ReaderSettingsViewModel) {
     )
 
     CheckboxItem(
+        label = stringResource(MR.strings.pref_eink_mode),
+        pref = viewModel.preferences.einkMode,
+    )
+
+    CheckboxItem(
         label = stringResource(MR.strings.pref_flash_page),
         pref = viewModel.preferences.flashOnPageChange,
     )

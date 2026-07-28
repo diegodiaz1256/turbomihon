@@ -47,6 +47,16 @@ jobs:
           else
             echo "conflict=true" >> "$GITHUB_OUTPUT"
           fi
+
+          # GITHUB_TOKEN can never push changes to .github/workflows/* (GitHub
+          # platform restriction, not fixable via permissions:). Revert any
+          # workflow-file changes pulled in by the merge so the push succeeds;
+          # upstream workflow changes must be cherry-picked manually.
+          if ! git diff --quiet origin/main -- .github/workflows/; then
+            git checkout origin/main -- .github/workflows/
+            git commit -m "Keep fork's own .github/workflows/ (GITHUB_TOKEN can't push workflow changes)" --allow-empty
+          fi
+
           git push --force-with-lease origin upstream-sync
 
       - name: Open or update PR
@@ -60,6 +70,11 @@ jobs:
             BODY="Automated sync from upstream mihonapp/mihon @ $UPSTREAM_SHA. **Merge conflicts present** - resolve them in this PR before merging."
           else
             BODY="Automated sync from upstream mihonapp/mihon @ $UPSTREAM_SHA. Merged cleanly, no conflicts."
+          fi
+          if git log origin/main..upstream-sync --oneline -- .github/workflows/ | grep -q .; then
+            BODY="$BODY
+
+**Note:** upstream/main has changes under .github/workflows/ that were NOT included (GITHUB_TOKEN can't push workflow file changes). Check upstream's build.yml/release.yml manually and cherry-pick if needed."
           fi
           EXISTING_PR="$(gh pr list --head upstream-sync --state open --json number -q '.[0].number' || true)"
           if [ -n "$EXISTING_PR" ]; then
