@@ -80,9 +80,8 @@ jobs:
             BODY="Automated sync from upstream mihonapp/mihon release $LATEST_TAG. Merged cleanly, no conflicts."
           fi
           if git log origin/main..upstream-sync --oneline -- .github/workflows/ | grep -q .; then
-            BODY="$BODY
-
-**Note:** upstream/main has changes under .github/workflows/ that were NOT included (GITHUB_TOKEN can't push workflow file changes). Check upstream's build.yml/release.yml manually and cherry-pick if needed."
+            NOTE="**Note:** upstream/main has changes under .github/workflows/ that were NOT included (GITHUB_TOKEN can't push workflow file changes). Check upstream's build.yml/release.yml manually and cherry-pick if needed."
+            BODY="$(printf '%s\n\n%s' "$BODY" "$NOTE")"
           fi
           EXISTING_PR="$(gh pr list --head upstream-sync --state open --json number -q '.[0].number' || true)"
           if [ -n "$EXISTING_PR" ]; then
