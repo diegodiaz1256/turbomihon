@@ -110,7 +110,9 @@ jobs:
         with:
           tag_name: v${{ needs.check_version_bump.outputs.version }}
           name: TurboMihon v${{ needs.check_version_bump.outputs.version }}
-          body: Automated build for TurboMihon (personal fork), synced from upstream mihonapp/mihon.
+          body: |
+            Automated build for TurboMihon (personal fork), synced from upstream mihonapp/mihon.
+          generate_release_notes: true
           files: TurboMihon-*.apk
           draft: false
           prerelease: false
