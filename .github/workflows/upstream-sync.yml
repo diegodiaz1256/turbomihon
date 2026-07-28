@@ -36,9 +36,7 @@ jobs:
       - name: Check for new upstream release
         id: check
         run: |
-          CURRENT="$(grep -oP 'versionName\s*=\s*"\K[^"]+' app/build.gradle.kts)"
-          UPSTREAM_VERSION="${LATEST_TAG#v}"
-          if [ "$UPSTREAM_VERSION" = "$CURRENT" ]; then
+          if git merge-base --is-ancestor "$LATEST_TAG" origin/main; then
             echo "new=false" >> "$GITHUB_OUTPUT"
           else
             echo "new=true" >> "$GITHUB_OUTPUT"
