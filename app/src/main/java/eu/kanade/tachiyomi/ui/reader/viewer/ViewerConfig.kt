@@ -2,6 +2,7 @@ package eu.kanade.tachiyomi.ui.reader.viewer
 
 import eu.kanade.tachiyomi.ui.reader.setting.ReaderPreferences
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -49,8 +50,15 @@ abstract class ViewerConfig(readerPreferences: ReaderPreferences, private val sc
         readerPreferences.readWithLongTap
             .register({ longTapEnabled = it })
 
-        readerPreferences.pageTransitions
-            .register({ usePageTransitions = it })
+        combine(readerPreferences.pageTransitions.changes(), readerPreferences.einkMode.changes()) {
+                transitions,
+                einkMode,
+            ->
+            transitions && !einkMode
+        }
+            .distinctUntilChanged()
+            .onEach { usePageTransitions = it }
+            .launchIn(scope)
 
         readerPreferences.doubleTapAnimSpeed
             .register({ doubleTapAnimDuration = it })

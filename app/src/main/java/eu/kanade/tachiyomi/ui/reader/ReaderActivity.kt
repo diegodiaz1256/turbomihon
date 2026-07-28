@@ -430,6 +430,7 @@ class ReaderActivity : BaseActivity() {
     private fun ContentOverlay(state: ReaderViewModel.State) {
         val flashOnPageChange by readerPreferences.flashOnPageChange.collectAsState()
 
+        val einkMode by readerPreferences.einkMode.collectAsState()
         val colorOverlayEnabled by readerPreferences.colorFilter.collectAsState()
         val colorOverlay by readerPreferences.colorFilterValue.collectAsState()
         val colorOverlayMode by readerPreferences.colorFilterMode.collectAsState()
@@ -439,7 +440,7 @@ class ReaderActivity : BaseActivity() {
 
         ReaderContentOverlay(
             brightness = state.brightnessOverlayValue,
-            color = colorOverlay.takeIf { colorOverlayEnabled },
+            color = colorOverlay.takeIf { colorOverlayEnabled && !einkMode },
             colorBlendMode = colorOverlayBlendMode,
         )
 
@@ -886,14 +887,19 @@ class ReaderActivity : BaseActivity() {
                 .onEach(::setKeepScreenOn)
                 .launchIn(lifecycleScope)
 
-            readerPreferences.customBrightness.changes()
+            combine(
+                readerPreferences.customBrightness.changes(),
+                readerPreferences.einkMode.changes(),
+            ) { customBrightness, einkMode -> customBrightness && !einkMode }
+                .distinctUntilChanged()
                 .onEach(::setCustomBrightness)
                 .launchIn(lifecycleScope)
 
             combine(
                 readerPreferences.grayscale.changes(),
                 readerPreferences.invertedColors.changes(),
-            ) { grayscale, invertedColors -> grayscale to invertedColors }
+                readerPreferences.einkMode.changes(),
+            ) { grayscale, invertedColors, einkMode -> (grayscale || einkMode) to invertedColors }
                 .onEach { (grayscale, invertedColors) ->
                     setLayerPaint(grayscale, invertedColors)
                 }

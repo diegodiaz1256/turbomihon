@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.withContext
 import logcat.LogPriority
 import mihon.core.archive.ZipWriter
 import nl.adaptivity.xmlutil.serialization.XML
@@ -549,7 +550,7 @@ class Downloader(
         return ImageUtil.getExtensionFromMimeType(mime) { file.openInputStream() }
     }
 
-    private fun splitTallImageIfNeeded(page: Page, tmpDir: UniFile) {
+    private suspend fun splitTallImageIfNeeded(page: Page, tmpDir: UniFile) {
         if (!downloadPreferences.splitTallImages.get()) return
 
         try {
@@ -560,7 +561,12 @@ class Downloader(
             // If the original page was previously split, then skip
             if (imageFile.name.orEmpty().startsWith("${filenamePrefix}__")) return
 
-            ImageUtil.splitTallImage(tmpDir, imageFile, filenamePrefix)
+            // Bitmap decode/encode is CPU-bound; run on the Default dispatcher so it's
+            // capped to core count instead of racing unbounded on the IO dispatcher
+            // alongside network downloads.
+            withContext(Dispatchers.Default) {
+                ImageUtil.splitTallImage(tmpDir, imageFile, filenamePrefix)
+            }
         } catch (e: Exception) {
             logcat(LogPriority.ERROR, e) { "Failed to split downloaded image" }
         }
