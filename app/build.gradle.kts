@@ -32,8 +32,8 @@ android {
     defaultConfig {
         applicationId = "app.turbomihon"
 
-        versionCode = 29
-        versionName = "0.20.1.3"
+        versionCode = 30
+        versionName = "0.20.1.4"
 
         buildConfigField("String", "COMMIT_COUNT", "\"${getLatestCommitCount()}\"")
         buildConfigField("String", "COMMIT_SHA", "\"${getLatestCommitSha()}\"")
