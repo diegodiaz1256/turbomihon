@@ -42,9 +42,9 @@ class AppUpdateChecker {
 
 val GITHUB_REPO: String by lazy {
     if (isPreviewBuildType) {
-        "diegodiaz1256/mihon-preview"
+        "diegodiaz1256/turbomihon-preview"
     } else {
-        "diegodiaz1256/mihon"
+        "diegodiaz1256/turbomihon"
     }
 }
 
