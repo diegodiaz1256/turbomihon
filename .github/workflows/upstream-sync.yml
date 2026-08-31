@@ -49,18 +49,42 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B upstream-sync origin/main
-          if git merge --no-edit "$LATEST_TAG"; then
-            echo "conflict=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "conflict=true" >> "$GITHUB_OUTPUT"
+
+          git merge --no-edit "$LATEST_TAG" || true
+
+          # app/build.gradle.kts conflicts on EVERY sync: upstream bumps the same
+          # versionCode/versionName lines the fork owns. Resolve it mechanically -
+          # take upstream's versionName as the new base and re-append the fork's
+          # counter (0.20.4 + fork counter 1 -> "0.20.4.1"), and take a versionCode
+          # strictly above both sides so the release is always installable as an
+          # upgrade. Any OTHER conflict is a real one and stops the run.
+          if git diff --name-only --diff-filter=U | grep -qx 'app/build.gradle.kts'; then
+            python3 .github/scripts/resolve_version_conflict.py | tee /tmp/resolve.out
+            grep '^version=' /tmp/resolve.out >> "$GITHUB_OUTPUT"
+            git add app/build.gradle.kts
           fi
 
           # GITHUB_TOKEN can never push changes to .github/workflows/* (GitHub
           # platform restriction, not fixable via permissions:). Revert any
           # workflow-file changes pulled in by the merge so the push succeeds;
           # upstream workflow changes must be cherry-picked manually.
-          if ! git diff --quiet origin/main -- .github/workflows/; then
-            git checkout origin/main -- .github/workflows/
+          git checkout origin/main -- .github/workflows/
+          git add .github/workflows/
+
+          REMAINING="$(git diff --name-only --diff-filter=U)"
+          if [ -n "$REMAINING" ]; then
+            echo "conflict=true" >> "$GITHUB_OUTPUT"
+            echo "Unresolved conflicts:"
+            echo "$REMAINING"
+            # Commit the conflict markers so a human can resolve them in the PR.
+            git add -A
+            git commit -m "Merge upstream $LATEST_TAG (CONFLICTS - resolve before merging)"
+          else
+            echo "conflict=false" >> "$GITHUB_OUTPUT"
+            # MERGE_HEAD is set only if the merge is still in progress.
+            if [ -f .git/MERGE_HEAD ]; then
+              git commit --no-edit
+            fi
             git commit -m "Keep fork's own .github/workflows/ (GITHUB_TOKEN can't push workflow changes)" --allow-empty
           fi
 
