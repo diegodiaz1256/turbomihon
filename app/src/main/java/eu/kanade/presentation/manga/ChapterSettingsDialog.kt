@@ -50,6 +50,7 @@ fun ChapterSettingsDialog(
     onDownloadFilterChanged: (TriState) -> Unit,
     onUnreadFilterChanged: (TriState) -> Unit,
     onBookmarkedFilterChanged: (TriState) -> Unit,
+    onCuratedFilterChanged: (TriState) -> Unit,
     scanlatorFilterActive: Boolean,
     onScanlatorFilterClicked: (() -> Unit),
     onSortModeChanged: (Long) -> Unit,
@@ -106,6 +107,8 @@ fun ChapterSettingsDialog(
                         onUnreadFilterChanged = onUnreadFilterChanged,
                         bookmarkedFilter = manga?.bookmarkedFilter ?: TriState.DISABLED,
                         onBookmarkedFilterChanged = onBookmarkedFilterChanged,
+                        curatedFilter = manga?.curatedFilter ?: TriState.DISABLED,
+                        onCuratedFilterChanged = onCuratedFilterChanged,
                         scanlatorFilterActive = scanlatorFilterActive,
                         onScanlatorFilterClicked = onScanlatorFilterClicked,
                     )
@@ -136,6 +139,8 @@ private fun ColumnScope.FilterPage(
     onUnreadFilterChanged: (TriState) -> Unit,
     bookmarkedFilter: TriState,
     onBookmarkedFilterChanged: (TriState) -> Unit,
+    curatedFilter: TriState,
+    onCuratedFilterChanged: (TriState) -> Unit,
     scanlatorFilterActive: Boolean,
     onScanlatorFilterClicked: (() -> Unit),
 ) {
@@ -153,6 +158,12 @@ private fun ColumnScope.FilterPage(
         label = stringResource(MR.strings.action_filter_bookmarked),
         state = bookmarkedFilter,
         onClick = onBookmarkedFilterChanged,
+    )
+    // Fork-only: filter by TurboMihon curated-pick chapter memo tag.
+    TriStateItem(
+        label = "Curated pick",
+        state = curatedFilter,
+        onClick = onCuratedFilterChanged,
     )
     ScanlatorFilterItem(
         active = scanlatorFilterActive,

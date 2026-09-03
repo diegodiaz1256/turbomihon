@@ -35,6 +35,16 @@ class SetMangaChapterFlags(
         )
     }
 
+    // Fork-only: filter by TurboMihon curated-pick chapter memo tag.
+    suspend fun awaitSetCuratedFilter(manga: Manga, flag: Long): Boolean {
+        return mangaRepository.update(
+            MangaUpdate(
+                id = manga.id,
+                chapterFlags = manga.chapterFlags.setFlag(flag, Manga.CHAPTER_CURATED_MASK),
+            ),
+        )
+    }
+
     suspend fun awaitSetDisplayMode(manga: Manga, flag: Long): Boolean {
         return mangaRepository.update(
             MangaUpdate(
@@ -74,6 +84,7 @@ class SetMangaChapterFlags(
         unreadFilter: Long,
         downloadedFilter: Long,
         bookmarkedFilter: Long,
+        curatedFilter: Long,
         sortingMode: Long,
         sortingDirection: Long,
         displayMode: Long,
@@ -84,6 +95,7 @@ class SetMangaChapterFlags(
                 chapterFlags = 0L.setFlag(unreadFilter, Manga.CHAPTER_UNREAD_MASK)
                     .setFlag(downloadedFilter, Manga.CHAPTER_DOWNLOADED_MASK)
                     .setFlag(bookmarkedFilter, Manga.CHAPTER_BOOKMARKED_MASK)
+                    .setFlag(curatedFilter, Manga.CHAPTER_CURATED_MASK)
                     .setFlag(sortingMode, Manga.CHAPTER_SORTING_MASK)
                     .setFlag(sortingDirection, Manga.CHAPTER_SORT_DIR_MASK)
                     .setFlag(displayMode, Manga.CHAPTER_DISPLAY_MASK),

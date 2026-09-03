@@ -64,6 +64,9 @@ data class Manga(
     val bookmarkedFilterRaw: Long
         get() = chapterFlags and CHAPTER_BOOKMARKED_MASK
 
+    val curatedFilterRaw: Long
+        get() = chapterFlags and CHAPTER_CURATED_MASK
+
     val unreadFilter: TriState
         get() = when (unreadFilterRaw) {
             CHAPTER_SHOW_UNREAD -> TriState.ENABLED_IS
@@ -75,6 +78,13 @@ data class Manga(
         get() = when (bookmarkedFilterRaw) {
             CHAPTER_SHOW_BOOKMARKED -> TriState.ENABLED_IS
             CHAPTER_SHOW_NOT_BOOKMARKED -> TriState.ENABLED_NOT
+            else -> TriState.DISABLED
+        }
+
+    val curatedFilter: TriState
+        get() = when (curatedFilterRaw) {
+            CHAPTER_SHOW_CURATED -> TriState.ENABLED_IS
+            CHAPTER_SHOW_NOT_CURATED -> TriState.ENABLED_NOT
             else -> TriState.DISABLED
         }
 
@@ -101,6 +111,11 @@ data class Manga(
         const val CHAPTER_SHOW_BOOKMARKED = 0x00000020L
         const val CHAPTER_SHOW_NOT_BOOKMARKED = 0x00000040L
         const val CHAPTER_BOOKMARKED_MASK = 0x00000060L
+
+        // Fork-only: filter by TurboMihon curated-pick chapter memo tag.
+        const val CHAPTER_SHOW_CURATED = 0x00000400L
+        const val CHAPTER_SHOW_NOT_CURATED = 0x00000800L
+        const val CHAPTER_CURATED_MASK = 0x00000C00L
 
         const val CHAPTER_SORTING_SOURCE = 0x00000000L
         const val CHAPTER_SORTING_NUMBER = 0x00000100L

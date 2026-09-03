@@ -17,6 +17,7 @@ import eu.kanade.core.util.addOrRemove
 import eu.kanade.core.util.insertSeparators
 import eu.kanade.domain.chapter.interactor.GetAvailableScanlators
 import eu.kanade.domain.chapter.interactor.SetReadStatus
+import eu.kanade.domain.chapter.model.isCuratedPick
 import eu.kanade.domain.manga.interactor.GetExcludedScanlators
 import eu.kanade.domain.manga.interactor.SetExcludedScanlators
 import eu.kanade.domain.manga.interactor.UpdateManga
@@ -903,6 +904,24 @@ class MangaViewModel(
     }
 
     /**
+     * Sets the curated-pick filter and requests an UI update.
+     * @param state whether to display only chapters tagged curated_pick or all chapters.
+     */
+    fun setCuratedFilter(state: TriState) {
+        val manga = successState?.manga ?: return
+
+        val flag = when (state) {
+            TriState.DISABLED -> Manga.SHOW_ALL
+            TriState.ENABLED_IS -> Manga.CHAPTER_SHOW_CURATED
+            TriState.ENABLED_NOT -> Manga.CHAPTER_SHOW_NOT_CURATED
+        }
+
+        viewModelScope.launchNonCancellable {
+            setMangaChapterFlags.awaitSetCuratedFilter(manga, flag)
+        }
+    }
+
+    /**
      * Sets the active display mode.
      * @param mode the mode to set.
      */
@@ -1181,9 +1200,11 @@ class MangaViewModel(
                 val unreadFilter = manga.unreadFilter
                 val downloadedFilter = manga.downloadedFilter
                 val bookmarkedFilter = manga.bookmarkedFilter
+                val curatedFilter = manga.curatedFilter
                 return asSequence()
                     .filter { (chapter) -> applyFilter(unreadFilter) { !chapter.read } }
                     .filter { (chapter) -> applyFilter(bookmarkedFilter) { chapter.bookmark } }
+                    .filter { (chapter) -> applyFilter(curatedFilter) { chapter.isCuratedPick() } }
                     .filter { applyFilter(downloadedFilter) { it.isDownloaded || isLocalManga } }
                     .sortedWith { (chapter1), (chapter2) -> getChapterSort(manga).invoke(chapter1, chapter2) }
             }
