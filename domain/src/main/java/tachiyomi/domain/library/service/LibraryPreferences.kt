@@ -161,6 +161,12 @@ class LibraryPreferences(
         Manga.SHOW_ALL,
     )
 
+    // Fork-only: filter by TurboMihon curated-pick chapter memo tag.
+    val filterChapterByCurated: Preference<Long> = preferenceStore.getLong(
+        "default_chapter_filter_by_curated",
+        Manga.SHOW_ALL,
+    )
+
     // and upload date
     val sortChapterBySourceOrNumber: Preference<Long> = preferenceStore.getLong(
         "default_chapter_sort_by_source_or_number",
@@ -181,6 +187,7 @@ class LibraryPreferences(
         filterChapterByRead.set(manga.unreadFilterRaw)
         filterChapterByDownloaded.set(manga.downloadedFilterRaw)
         filterChapterByBookmarked.set(manga.bookmarkedFilterRaw)
+        filterChapterByCurated.set(manga.curatedFilterRaw)
         sortChapterBySourceOrNumber.set(manga.sorting)
         displayChapterByNameOrNumber.set(manga.displayMode)
         sortChapterByAscendingOrDescending.set(

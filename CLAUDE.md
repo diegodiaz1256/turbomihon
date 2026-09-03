@@ -74,6 +74,7 @@ Keep this list current when adding fork features.
 - **Per-source download concurrency overrides** — `DownloadPreferences.sourceConcurrencyOverrides`, stored as `"sourceId:chapters:pages"` strings; bypasses the global parallel limits for self-hosted backends.
 - **Updater points at the fork** — `AppUpdateChecker.kt` (`diegodiaz1256/turbomihon`, `-preview` for preview builds).
 - **Onboarding + About** — `TurboMihonStep.kt` (first onboarding step), fork link in `AboutScreen.kt`.
+- **Curated-pick chapter filter** — reads a namespaced `Chapter.memo` key (`turbomihon.curated_pick`) that a source can populate (e.g. a Suwayomi extension forwarding server-side chapter `meta`); surfaced as a Read/Unread/Bookmarked-style chapter list filter. New bit flag `Manga.CHAPTER_CURATED_MASK` (`0x00000400`/`0x00000800`), `LibraryPreferences.filterChapterByCurated`, `SetMangaChapterFlags.awaitSetCuratedFilter`, `MangaViewModel.setCuratedFilter`, `Chapter.isCuratedPick()` in `eu.kanade.domain.chapter.model.ChapterFilter`. Display-layer filter (like the other three) plus honored in `ChapterGetNextUnread` via the same `List<Chapter>.applyFilters`, so "read next" also skips non-curated chapters. Does not touch the DB query layer the way scanlator exclusion does.
 
 ## CI / release
 

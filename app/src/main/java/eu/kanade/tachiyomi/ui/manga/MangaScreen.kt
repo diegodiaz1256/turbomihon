@@ -225,6 +225,7 @@ class MangaScreen(
                 onDownloadFilterChanged = viewModel::setDownloadedFilter,
                 onUnreadFilterChanged = viewModel::setUnreadFilter,
                 onBookmarkedFilterChanged = viewModel::setBookmarkedFilter,
+                onCuratedFilterChanged = viewModel::setCuratedFilter,
                 onSortModeChanged = viewModel::setSorting,
                 onDisplayModeChanged = viewModel::setDisplayMode,
                 onSetAsDefault = viewModel::setCurrentSettingsAsDefault,
