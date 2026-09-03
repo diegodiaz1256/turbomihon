@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TurboMihon</title>
+<meta name="description" content="A personal fork of Mihon — the free, open-source manga reader for Android — with e-ink mode, per-source download tuning, and a curated-chapter filter.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📖</text></svg>">
+<style>
+  :root {
+    --bg: #fbfaf8;
+    --bg-elevated: #ffffff;
+    --text: #1c1a17;
+    --text-dim: #63594d;
+    --border: #e7e0d6;
+    --accent: #b5541a;
+    --accent-text: #ffffff;
+    --code-bg: #f1ece3;
+    --shadow: 0 1px 2px rgba(28,26,23,0.06), 0 8px 24px rgba(28,26,23,0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17140f;
+      --bg-elevated: #221e17;
+      --text: #f3ede2;
+      --text-dim: #b6a992;
+      --border: #362f24;
+      --accent: #e07a3c;
+      --accent-text: #1c1207;
+      --code-bg: #2a251c;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17140f;
+    --bg-elevated: #221e17;
+    --text: #f3ede2;
+    --text-dim: #b6a992;
+    --border: #362f24;
+    --accent: #e07a3c;
+    --accent-text: #1c1207;
+    --code-bg: #2a251c;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  a { color: var(--accent); }
+
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+
+  header.hero {
+    padding: 96px 0 72px;
+    text-align: center;
+  }
+  .icon {
+    font-size: 56px;
+    line-height: 1;
+    margin-bottom: 20px;
+  }
+  h1 {
+    font-size: clamp(2.2rem, 5vw, 3.2rem);
+    margin: 0 0 12px;
+    letter-spacing: -0.02em;
+  }
+  .tagline {
+    font-size: 1.15rem;
+    color: var(--text-dim);
+    max-width: 560px;
+    margin: 0 auto 36px;
+  }
+  .cta-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 22px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    text-decoration: none;
+    border: 1px solid var(--border);
+    transition: transform 0.08s ease;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--accent-text);
+    border-color: var(--accent);
+  }
+  .btn-secondary {
+    background: var(--bg-elevated);
+    color: var(--text);
+  }
+  .version-pill {
+    display: inline-block;
+    margin-top: 18px;
+    font-size: 0.8rem;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  .version-pill code {
+    background: var(--code-bg);
+    padding: 2px 7px;
+    border-radius: 6px;
+  }
+
+  section { padding: 56px 0; border-top: 1px solid var(--border); }
+  section h2 {
+    font-size: 1.5rem;
+    margin: 0 0 8px;
+  }
+  section .lede {
+    color: var(--text-dim);
+    margin: 0 0 32px;
+    max-width: 620px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+  }
+  .card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: var(--shadow);
+  }
+  .card .emoji { font-size: 1.6rem; display: block; margin-bottom: 10px; }
+  .card h3 { margin: 0 0 8px; font-size: 1.05rem; }
+  .card p { margin: 0; color: var(--text-dim); font-size: 0.92rem; }
+
+  .apk-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .apk-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 0.92rem;
+  }
+  .apk-row:hover { border-color: var(--accent); }
+  .apk-row .arch { font-weight: 600; }
+  .apk-row .size { color: var(--text-dim); font-size: 0.85rem; }
+  #apk-status { color: var(--text-dim); font-size: 0.9rem; }
+
+  footer {
+    padding: 40px 0 64px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border);
+  }
+  footer a { color: var(--text-dim); }
+  footer .fork-note { margin-top: 8px; max-width: 520px; margin-left: auto; margin-right: auto; }
+
+  code.inline {
+    background: var(--code-bg);
+    padding: 1px 6px;
+    border-radius: 5px;
+    font-size: 0.88em;
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="icon">📖</div>
+    <h1>TurboMihon</h1>
+    <p class="tagline">A personal fork of <a href="https://github.com/mihonapp/mihon" target="_blank" rel="noopener">Mihon</a> — free, open-source manga and comic reading for Android — tuned for e-ink devices and self-hosted backends.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="#downloads">Download latest release</a>
+      <a class="btn btn-secondary" href="https://github.com/diegodiaz1256/turbomihon" target="_blank" rel="noopener">View on GitHub</a>
+    </div>
+    <div class="version-pill" id="version-pill">Latest: <code>checking…</code></div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <h2>What's different from Mihon</h2>
+    <p class="lede">TurboMihon tracks upstream Mihon closely and pulls in every release automatically. On top of that, it carries a small set of its own features.</p>
+    <div class="grid">
+      <div class="card">
+        <span class="emoji">🌓</span>
+        <h3>E-ink reader mode</h3>
+        <p>Forces grayscale rendering and disables page transitions, the color overlay, and custom brightness — built for e-ink tablets where those effects just cause ghosting.</p>
+      </div>
+      <div class="card">
+        <span class="emoji">⬇️</span>
+        <h3>Per-source download concurrency</h3>
+        <p>Override the global parallel download and page limits on a per-source basis, so a self-hosted backend (like a Suwayomi server on your own network) isn't throttled to the same limits as a public source.</p>
+      </div>
+      <div class="card">
+        <span class="emoji">🏷️</span>
+        <h3>Curated-pick chapter filter</h3>
+        <p>Filter a chapter list down to chapters a source has tagged as the "curated pick" — useful for dedup workflows where multiple scanlator groups upload the same chapter and you only want the winner in your reading queue.</p>
+      </div>
+      <div class="card">
+        <span class="emoji">🔄</span>
+        <h3>Automatic upstream sync</h3>
+        <p>A daily job merges the latest Mihon release into this fork automatically, resolves the recurring version conflict, and opens a PR — so TurboMihon rarely falls more than a day behind upstream.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="downloads">
+  <div class="wrap">
+    <h2>Downloads</h2>
+    <p class="lede">Pulled live from the <a href="https://github.com/diegodiaz1256/turbomihon/releases/latest" target="_blank" rel="noopener">latest GitHub release</a>. Pick the build matching your device's CPU architecture, or the universal APK if you're not sure.</p>
+    <div class="apk-list" id="apk-list">
+      <div id="apk-status">Loading release info…</div>
+    </div>
+  </div>
+</section>
+
+<section id="about">
+  <div class="wrap">
+    <h2>About this fork</h2>
+    <p class="lede">
+      TurboMihon is a personal fork maintained for one person's own devices and workflow. It vendors upstream Mihon
+      wholesale and re-syncs daily, keeping fork-specific changes small and self-contained. Source is on
+      <a href="https://github.com/diegodiaz1256/turbomihon" target="_blank" rel="noopener">GitHub</a>,
+      licensed the same as upstream Mihon (Apache License 2.0).
+    </p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Not affiliated with the Mihon project. TurboMihon is an independent, unofficial fork.</div>
+    <div class="fork-note">Built on <a href="https://github.com/mihonapp/mihon" target="_blank" rel="noopener">mihonapp/mihon</a>, licensed under Apache License 2.0.</div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var API = "https://api.github.com/repos/diegodiaz1256/turbomihon/releases/latest";
+  var listEl = document.getElementById("apk-list");
+  var pillEl = document.getElementById("version-pill");
+
+  function fmtSize(bytes) {
+    if (!bytes) return "";
+    var mb = bytes / (1024 * 1024);
+    return mb.toFixed(1) + " MB";
+  }
+
+  function archLabel(name) {
+    if (/arm64-v8a/.test(name)) return "ARM64 (arm64-v8a) — most modern phones";
+    if (/armeabi-v7a/.test(name)) return "ARM (armeabi-v7a) — older phones";
+    if (/x86_64/.test(name)) return "x86_64 — emulators / some tablets";
+    if (/x86(?!_)/.test(name)) return "x86 — older emulators / tablets";
+    return "Universal — works on any device";
+  }
+
+  fetch(API, { headers: { Accept: "application/vnd.github+json" } })
+    .then(function (r) {
+      if (!r.ok) throw new Error("GitHub API returned " + r.status);
+      return r.json();
+    })
+    .then(function (release) {
+      var tag = release.tag_name || release.name || "unknown";
+      pillEl.innerHTML = "Latest: <code>" + tag + "</code> · released " +
+        new Date(release.published_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+
+      var apks = (release.assets || []).filter(function (a) {
+        return /\.apk$/i.test(a.name);
+      });
+
+      if (!apks.length) {
+        listEl.innerHTML = '<div id="apk-status">No APK assets found on the latest release.</div>';
+        return;
+      }
+
+      apks.sort(function (a, b) {
+        var score = function (n) {
+          if (!/arm64-v8a|armeabi-v7a|x86_64|x86(?!_)/.test(n)) return 0;
+          return 1;
+        };
+        return score(a.name) - score(b.name);
+      });
+
+      listEl.innerHTML = apks.map(function (a) {
+        return '<a class="apk-row" href="' + a.browser_download_url + '">' +
+          '<span class="arch">' + archLabel(a.name) + '</span>' +
+          '<span class="size">' + fmtSize(a.size) + '</span>' +
+          '</a>';
+      }).join("");
+    })
+    .catch(function (err) {
+      pillEl.innerHTML = "Latest: <code>unavailable</code>";
+      listEl.innerHTML = '<div id="apk-status">Could not load release info (' +
+        (err && err.message ? err.message : "unknown error") +
+        '). <a href="https://github.com/diegodiaz1256/turbomihon/releases/latest">See releases on GitHub →</a></div>';
+    });
+})();
+</script>
+
+</body>
+</html>

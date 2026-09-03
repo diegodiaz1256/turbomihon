@@ -86,6 +86,7 @@ Keep this list current when adding fork features.
   - Conflicts in any other file are committed with markers intact and flagged in the PR body for manual resolution.
   - It deliberately reverts any `.github/workflows/` changes the merge pulls in, because `GITHUB_TOKEN` cannot push workflow files — **upstream workflow changes must be cherry-picked by hand**, and the PR body says so when there are any.
 - `release.yml` / `update_website.yml` are upstream's and don't run here.
+- `pages.yml` — fork-only. Deploys `docs/index.html` (a static landing page, not upstream's website) to GitHub Pages on push to `main` when `docs/**` changes. The page pulls release/APK info client-side from the GitHub API at load time — no build step, no data baked in at deploy time. Requires Pages enabled in repo settings (Source: GitHub Actions).
 
 ## Conventions
 
