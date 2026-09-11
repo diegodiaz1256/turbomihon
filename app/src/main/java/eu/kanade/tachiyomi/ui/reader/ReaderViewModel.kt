@@ -8,6 +8,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import eu.kanade.domain.base.BasePreferences
+import eu.kanade.domain.chapter.model.isCuratedPick
 import eu.kanade.domain.chapter.model.toDbChapter
 import eu.kanade.domain.manga.interactor.SetMangaViewerFlags
 import eu.kanade.domain.manga.model.readerOrientation
@@ -200,7 +201,9 @@ class ReaderViewModel @JvmOverloads constructor(
                                         )
                                     ) ||
                                 (manga.bookmarkedFilterRaw == Manga.CHAPTER_SHOW_BOOKMARKED && !it.bookmark) ||
-                                (manga.bookmarkedFilterRaw == Manga.CHAPTER_SHOW_NOT_BOOKMARKED && it.bookmark)
+                                (manga.bookmarkedFilterRaw == Manga.CHAPTER_SHOW_NOT_BOOKMARKED && it.bookmark) ||
+                                (manga.curatedFilterRaw == Manga.CHAPTER_SHOW_CURATED && !it.isCuratedPick()) ||
+                                (manga.curatedFilterRaw == Manga.CHAPTER_SHOW_NOT_CURATED && it.isCuratedPick())
                         }
                         else -> false
                     }
