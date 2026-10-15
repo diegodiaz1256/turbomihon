@@ -222,15 +222,18 @@ class Downloader(
             val activeDownloadsFlow = combine(
                 queueState,
                 downloadPreferences.parallelSourceLimit.changes(),
-            ) { a, b -> a to b }.transformLatest { (queue, parallelCount) ->
+                // Fork-only: per-source overrides change which sources may run
+                downloadPreferences.sourceConcurrencyOverrides.changes(),
+            ) { queue, _, _ -> queue }.transformLatest { queue ->
                 while (true) {
-                    val activeDownloads = queue.asSequence()
+                    val byQueuedSource = queue.asSequence()
                         // Ignore completed downloads, leave them in the queue
                         .filter { it.status.value <= Download.State.DOWNLOADING.value }
                         .groupBy { it.source }
                         .toList()
-                        .take(parallelCount)
-                        .map { (_, downloads) -> downloads.first() }
+                    // Fork-only: overridden sources bypass parallelSourceLimit
+                    val activeDownloads = downloadPreferences
+                        .selectActiveDownloads(byQueuedSource.map { (source, downloads) -> source.id to downloads })
                     emit(activeDownloads)
 
                     if (activeDownloads.isEmpty()) break
@@ -257,7 +260,7 @@ class Downloader(
                 }
 
                 activeDownloadsFlow.collectLatest { activeDownloads ->
-                    val activeSources = activeDownloads.map { it.source }
+                    val activeSources = activeDownloads.map { it.source }.distinct()
                     val sourceJobsToStop = sourceJobs.filter { it.key !in activeSources }
                     sourceJobsToStop.forEach { (source, job) ->
                         job.cancel()
@@ -283,6 +286,13 @@ class Downloader(
         downloadJobs: MutableMap<Download, Job>,
         owner: Job,
     ) = launch(Dispatchers.IO) {
+        // Fork-only: a source with a concurrency override runs several chapters at once, each with its own page
+        // slots. Without one this is upstream's behavior: one chapter at a time sharing the source's page slots.
+        val override = downloadPreferences.concurrencyOverrideFor(source.id)
+        if (override != null) {
+            runOverriddenSource(source, override.chapterConcurrency, downloadJobs, owner)
+            return@launch
+        }
         val slots = Semaphore(downloadPreferences.parallelPageLimit.get())
         while (true) {
             // A canceled job can mark a chapter as downloading after it's been reset, so that counts as waiting too
@@ -305,6 +315,44 @@ class Downloader(
                 pagesStarted.complete(Unit)
             }
             pagesStarted.await()
+        }
+    }
+
+    /**
+     * Fork-only: downloads the queued chapters of [source] in queue order, up to [chapterConcurrency] at once. Each
+     * chapter gets its own page slots, sized by the source's page override.
+     */
+    private suspend fun CoroutineScope.runOverriddenSource(
+        source: HttpSource,
+        chapterConcurrency: Int,
+        downloadJobs: MutableMap<Download, Job>,
+        owner: Job,
+    ) {
+        val chapterSlots = Semaphore(chapterConcurrency)
+        while (true) {
+            chapterSlots.acquire()
+            val download = try {
+                queueState
+                    .map { queue ->
+                        queue.firstOrNull {
+                            it.source == source &&
+                                (it.status == Download.State.QUEUE || it.status == Download.State.DOWNLOADING) &&
+                                it !in downloadJobs
+                        }
+                    }
+                    .filterNotNull()
+                    .first()
+            } catch (e: Throwable) {
+                chapterSlots.release()
+                throw e
+            }
+            val pageSlots = Semaphore(downloadPreferences.pageConcurrencyFor(source.id))
+            val job = launchDownloadJob(download, pageSlots, CompletableDeferred(), owner)
+            downloadJobs[download] = job
+            job.invokeOnCompletion {
+                downloadJobs.remove(download, job)
+                chapterSlots.release()
+            }
         }
     }
 
