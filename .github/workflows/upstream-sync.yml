@@ -105,9 +105,9 @@ jobs:
             NOTE="**Note:** upstream/main has changes under .github/workflows/ that were NOT included (GITHUB_TOKEN can't push workflow file changes). Check upstream's build.yml/release.yml manually and cherry-pick if needed."
             BODY="$(printf '%s\n\n%s' "$BODY" "$NOTE")"
           fi
-          EXISTING_PR="$(gh pr list --head upstream-sync --state open --json number -q '.[0].number' || true)"
+          EXISTING_PR="$(gh pr list --repo "$GITHUB_REPOSITORY" --head upstream-sync --state open --json number -q '.[0].number' || true)"
           if [ -n "$EXISTING_PR" ]; then
-            gh pr comment "$EXISTING_PR" --body "$BODY"
+            gh pr comment --repo "$GITHUB_REPOSITORY" "$EXISTING_PR" --body "$BODY"
           else
-            gh pr create --base main --head upstream-sync --title "Sync with upstream mihonapp/mihon ($LATEST_TAG)" --body "$BODY"
+            gh pr create --repo "$GITHUB_REPOSITORY" --base main --head upstream-sync --title "Sync with upstream mihonapp/mihon ($LATEST_TAG)" --body "$BODY"
           fi
