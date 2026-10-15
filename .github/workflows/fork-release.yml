@@ -65,12 +65,17 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@3f131e8634966bd73d06cc69884922b02e6faf92 # v6.2.0
 
+      # Mihon 0.21 reads the keystore from a path instead of decoding it in Gradle
+      - name: Decode signing keystore
+        run: echo "$SIGNING_KEY" | base64 -d > "${{ runner.temp }}/turbomihon.keystore"
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+
       - name: Build
         run: ./gradlew assembleRelease -Penable-updater
         env:
           MIHON_GITHUB_RELEASE: true
-          RUNNER_TEMP: ${{ runner.temp }}
-          storeFileBase64: ${{ secrets.SIGNING_KEY }}
+          storeFile: ${{ runner.temp }}/turbomihon.keystore
           storePassword: ${{ secrets.KEY_STORE_PASSWORD }}
           keyAlias: ${{ secrets.ALIAS }}
           keyPassword: ${{ secrets.KEY_PASSWORD }}
