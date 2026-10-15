@@ -37,8 +37,8 @@ android {
     defaultConfig {
         applicationId = "app.turbomihon"
 
-        versionCode = 39
-        versionName = "0.21.2.1"
+        versionCode = 40
+        versionName = "0.21.2.2"
 
         buildConfigField("boolean", "TELEMETRY_INCLUDED", "${Config.includeTelemetry}")
         buildConfigField("boolean", "UPDATER_ENABLED", "${Config.enableUpdater}")
