@@ -1,37 +1,36 @@
 package tachiyomi.domain.manga.interactor
 
+import dev.zacsweers.metro.Inject
 import tachiyomi.domain.manga.model.Manga
 import tachiyomi.domain.manga.model.MangaUpdate
 import tachiyomi.domain.manga.repository.MangaRepository
 
+@Inject
 class SetMangaChapterFlags(
     private val mangaRepository: MangaRepository,
 ) {
 
     suspend fun awaitSetDownloadedFilter(manga: Manga, flag: Long): Boolean {
         return mangaRepository.update(
-            MangaUpdate(
-                id = manga.id,
-                chapterFlags = manga.chapterFlags.setFlag(flag, Manga.CHAPTER_DOWNLOADED_MASK),
-            ),
+            MangaUpdate(manga.id) {
+                chapterFlags = manga.chapterFlags.setFlag(flag, Manga.CHAPTER_DOWNLOADED_MASK)
+            },
         )
     }
 
     suspend fun awaitSetUnreadFilter(manga: Manga, flag: Long): Boolean {
         return mangaRepository.update(
-            MangaUpdate(
-                id = manga.id,
-                chapterFlags = manga.chapterFlags.setFlag(flag, Manga.CHAPTER_UNREAD_MASK),
-            ),
+            MangaUpdate(manga.id) {
+                chapterFlags = manga.chapterFlags.setFlag(flag, Manga.CHAPTER_UNREAD_MASK)
+            },
         )
     }
 
     suspend fun awaitSetBookmarkFilter(manga: Manga, flag: Long): Boolean {
         return mangaRepository.update(
-            MangaUpdate(
-                id = manga.id,
-                chapterFlags = manga.chapterFlags.setFlag(flag, Manga.CHAPTER_BOOKMARKED_MASK),
-            ),
+            MangaUpdate(manga.id) {
+                chapterFlags = manga.chapterFlags.setFlag(flag, Manga.CHAPTER_BOOKMARKED_MASK)
+            },
         )
     }
 
@@ -47,10 +46,9 @@ class SetMangaChapterFlags(
 
     suspend fun awaitSetDisplayMode(manga: Manga, flag: Long): Boolean {
         return mangaRepository.update(
-            MangaUpdate(
-                id = manga.id,
-                chapterFlags = manga.chapterFlags.setFlag(flag, Manga.CHAPTER_DISPLAY_MASK),
-            ),
+            MangaUpdate(manga.id) {
+                chapterFlags = manga.chapterFlags.setFlag(flag, Manga.CHAPTER_DISPLAY_MASK)
+            },
         )
     }
 
@@ -72,15 +70,14 @@ class SetMangaChapterFlags(
             }
         }
         return mangaRepository.update(
-            MangaUpdate(
-                id = manga.id,
-                chapterFlags = newFlags,
-            ),
+            MangaUpdate(manga.id) {
+                chapterFlags = newFlags
+            },
         )
     }
 
     suspend fun awaitSetAllFlags(
-        mangaId: Long,
+        mangaIds: List<Long>,
         unreadFilter: Long,
         downloadedFilter: Long,
         bookmarkedFilter: Long,
@@ -89,6 +86,7 @@ class SetMangaChapterFlags(
         sortingDirection: Long,
         displayMode: Long,
     ): Boolean {
+<<<<<<< HEAD
         return mangaRepository.update(
             MangaUpdate(
                 id = mangaId,
@@ -101,6 +99,15 @@ class SetMangaChapterFlags(
                     .setFlag(displayMode, Manga.CHAPTER_DISPLAY_MASK),
             ),
         )
+=======
+        val flags = 0L.setFlag(unreadFilter, Manga.CHAPTER_UNREAD_MASK)
+            .setFlag(downloadedFilter, Manga.CHAPTER_DOWNLOADED_MASK)
+            .setFlag(bookmarkedFilter, Manga.CHAPTER_BOOKMARKED_MASK)
+            .setFlag(sortingMode, Manga.CHAPTER_SORTING_MASK)
+            .setFlag(sortingDirection, Manga.CHAPTER_SORT_DIR_MASK)
+            .setFlag(displayMode, Manga.CHAPTER_DISPLAY_MASK)
+        return mangaRepository.updateAll(mangaIds.map { MangaUpdate(it) { chapterFlags = flags } })
+>>>>>>> v0.21.2
     }
 
     private fun Long.setFlag(flag: Long, mask: Long): Long {

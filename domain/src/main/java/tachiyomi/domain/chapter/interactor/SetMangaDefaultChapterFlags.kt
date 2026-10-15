@@ -1,11 +1,12 @@
 package tachiyomi.domain.chapter.interactor
 
-import tachiyomi.core.common.util.lang.withNonCancellableContext
+import dev.zacsweers.metro.Inject
 import tachiyomi.domain.library.service.LibraryPreferences
 import tachiyomi.domain.manga.interactor.GetFavorites
 import tachiyomi.domain.manga.interactor.SetMangaChapterFlags
 import tachiyomi.domain.manga.model.Manga
 
+@Inject
 class SetMangaDefaultChapterFlags(
     private val libraryPreferences: LibraryPreferences,
     private val setMangaChapterFlags: SetMangaChapterFlags,
@@ -13,6 +14,7 @@ class SetMangaDefaultChapterFlags(
 ) {
 
     suspend fun await(manga: Manga) {
+<<<<<<< HEAD
         withNonCancellableContext {
             with(libraryPreferences) {
                 setMangaChapterFlags.awaitSetAllFlags(
@@ -27,11 +29,26 @@ class SetMangaDefaultChapterFlags(
                 )
             }
         }
+=======
+        setDefaultFlags(listOf(manga.id))
+>>>>>>> v0.21.2
     }
 
     suspend fun awaitAll() {
-        withNonCancellableContext {
-            getFavorites.await().forEach { await(it) }
+        setDefaultFlags(getFavorites.await().map { it.id })
+    }
+
+    private suspend fun setDefaultFlags(mangaIds: List<Long>) {
+        with(libraryPreferences) {
+            setMangaChapterFlags.awaitSetAllFlags(
+                mangaIds = mangaIds,
+                unreadFilter = filterChapterByRead.get(),
+                downloadedFilter = filterChapterByDownloaded.get(),
+                bookmarkedFilter = filterChapterByBookmarked.get(),
+                sortingMode = sortChapterBySourceOrNumber.get(),
+                sortingDirection = sortChapterByAscendingOrDescending.get(),
+                displayMode = displayChapterByNameOrNumber.get(),
+            )
         }
     }
 }
