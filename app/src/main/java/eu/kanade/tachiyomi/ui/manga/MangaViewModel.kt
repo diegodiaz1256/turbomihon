@@ -949,7 +949,7 @@ class MangaViewModel(
             TriState.ENABLED_NOT -> Manga.CHAPTER_SHOW_NOT_CURATED
         }
 
-        viewModelScope.launchNonCancellable {
+        appScope.launch {
             setMangaChapterFlags.awaitSetCuratedFilter(manga, flag)
         }
     }
