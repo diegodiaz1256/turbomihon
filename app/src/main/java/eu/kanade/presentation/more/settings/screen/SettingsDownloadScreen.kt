@@ -8,13 +8,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.util.fastMap
 import eu.kanade.presentation.category.visualName
 import eu.kanade.presentation.more.settings.Preference
 import eu.kanade.presentation.more.settings.widget.SourceConcurrencyOverrideDialog
 import eu.kanade.presentation.more.settings.widget.TriStateListDialog
 import eu.kanade.tachiyomi.source.online.HttpSource
-import tachiyomi.domain.category.interactor.GetCategories
+import kotlinx.coroutines.flow.map
+import mihon.app.di.appGraph
 import tachiyomi.domain.category.model.Category
 import tachiyomi.domain.download.service.DownloadPreferences
 import tachiyomi.domain.source.service.SourceManager
@@ -22,8 +24,6 @@ import tachiyomi.i18n.MR
 import tachiyomi.presentation.core.i18n.pluralStringResource
 import tachiyomi.presentation.core.i18n.stringResource
 import tachiyomi.presentation.core.util.collectAsState
-import uy.kohesive.injekt.Injekt
-import uy.kohesive.injekt.api.get
 
 object SettingsDownloadScreen : SearchableSettings {
 
@@ -33,13 +33,12 @@ object SettingsDownloadScreen : SearchableSettings {
 
     @Composable
     override fun getPreferences(): List<Preference> {
-        val getCategories = remember { Injekt.get<GetCategories>() }
+        val context = LocalContext.current
+        val getCategories = remember { context.appGraph.getCategories }
         val allCategories by getCategories.subscribe().collectAsState(initial = emptyList())
 
-        val downloadPreferences = remember { Injekt.get<DownloadPreferences>() }
-        val sourceManager = remember { Injekt.get<SourceManager>() }
-        val parallelSourceLimit by downloadPreferences.parallelSourceLimit.collectAsState()
-        val parallelPageLimit by downloadPreferences.parallelPageLimit.collectAsState()
+        val downloadPreferences = remember { context.appGraph.downloadPreferences }
+        val sourceManager = remember { context.appGraph.sourceManager }
         return listOf(
             Preference.PreferenceItem.SwitchPreference(
                 preference = downloadPreferences.downloadOnlyOverWifi,
@@ -55,17 +54,15 @@ object SettingsDownloadScreen : SearchableSettings {
                 subtitle = stringResource(MR.strings.split_tall_images_summary),
             ),
             Preference.PreferenceItem.SliderPreference(
-                value = parallelSourceLimit,
+                preference = downloadPreferences.parallelSourceLimit,
                 valueRange = 1..10,
                 title = stringResource(MR.strings.pref_download_concurrent_sources),
-                onValueChanged = { downloadPreferences.parallelSourceLimit.set(it) },
             ),
             Preference.PreferenceItem.SliderPreference(
-                value = parallelPageLimit,
+                preference = downloadPreferences.parallelPageLimit,
                 valueRange = 1..15,
                 title = stringResource(MR.strings.pref_download_concurrent_pages),
                 subtitle = stringResource(MR.strings.pref_download_concurrent_pages_summary),
-                onValueChanged = { downloadPreferences.parallelPageLimit.set(it) },
             ),
             getSourceConcurrencyOverridePreference(
                 downloadPreferences = downloadPreferences,
@@ -83,6 +80,7 @@ object SettingsDownloadScreen : SearchableSettings {
         )
     }
 
+    // Fork-only: per-source chapter and page concurrency overrides.
     @Composable
     private fun getSourceConcurrencyOverridePreference(
         downloadPreferences: DownloadPreferences,
@@ -91,9 +89,11 @@ object SettingsDownloadScreen : SearchableSettings {
         var showDialog by rememberSaveable { mutableStateOf(false) }
         val overrides by downloadPreferences.sourceConcurrencyOverrides.collectAsState()
         val overridesById = remember(overrides) { downloadPreferences.concurrencyOverridesById() }
+        val onlineSources by remember {
+            sourceManager.sources.map { sources -> sources.filterIsInstance<HttpSource>().sortedBy { it.name } }
+        }.collectAsState(initial = emptyList())
 
         if (showDialog) {
-            val onlineSources = remember { sourceManager.getOnlineSources().sortedBy { it.name } }
             SourceConcurrencyOverrideDialog(
                 sources = onlineSources,
                 overridesById = overridesById,
@@ -110,8 +110,7 @@ object SettingsDownloadScreen : SearchableSettings {
         val subtitle = if (overridesById.isEmpty()) {
             stringResource(MR.strings.pref_download_source_concurrency_overrides_summary)
         } else {
-            val names = overridesById.keys.mapNotNull { sourceManager.get(it)?.name }
-            names.joinToString()
+            onlineSources.filter { it.id in overridesById }.joinToString { it.name }
         }
 
         return Preference.PreferenceItem.TextPreference(
@@ -212,7 +211,7 @@ object SettingsDownloadScreen : SearchableSettings {
                 Preference.PreferenceItem.SwitchPreference(
                     preference = downloadNewUnreadChaptersOnlyPref,
                     title = stringResource(MR.strings.pref_download_new_unread_chapters_only),
-                    enabled = downloadNewChapters,
+                    visible = downloadNewChapters,
                 ),
                 Preference.PreferenceItem.TextPreference(
                     title = stringResource(MR.strings.categories),
@@ -221,7 +220,7 @@ object SettingsDownloadScreen : SearchableSettings {
                         included = included,
                         excluded = excluded,
                     ),
-                    enabled = downloadNewChapters,
+                    visible = downloadNewChapters,
                     onClick = { showDialog = true },
                 ),
             ),
