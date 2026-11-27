@@ -37,8 +37,8 @@ android {
     defaultConfig {
         applicationId = "app.turbomihon"
 
-        versionCode = 40
-        versionName = "0.21.2.2"
+        versionCode = 41
+        versionName = "0.21.3.1"
 
         buildConfigField("boolean", "TELEMETRY_INCLUDED", "${Config.includeTelemetry}")
         buildConfigField("boolean", "UPDATER_ENABLED", "${Config.enableUpdater}")
@@ -294,7 +294,6 @@ dependencies {
 
     // UI libraries
     implementation(libs.material)
-    implementation(libs.flexibleAdapter)
     implementation(libs.photoView)
     implementation(libs.directionalViewPager) {
         exclude(group = "androidx.viewpager", module = "viewpager")
